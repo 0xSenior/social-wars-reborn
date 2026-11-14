@@ -1,0 +1,30 @@
+# Game Assets (heavy flash binary files, stored in Releases)
+assets/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local user saves & logs
+saves/
+*.log
+
+# Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Editor / OS
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Build artifacts
+*.exe
+*.dll
+bundle/
+base_library.zip
