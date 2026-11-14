@@ -95,7 +95,7 @@ def play():
     GAMEVERSION = session['GAMEVERSION']
     print("[PLAY] USERID:", USERID)
     print("[PLAY] GAMEVERSION:", GAMEVERSION)
-    return render_template("play.html", save_info=save_info(USERID), serverTime=timestamp_now(), friendsInfo=fb_friends_str(USERID), version=version_name, GAMEVERSION=GAMEVERSION, public_url=PUBLIC_URL)
+    return render_template("play.html", save_info=save_info(USERID), serverTime=timestamp_now(), friendsInfo=fb_friends_str(USERID), version=version_name, GAMEVERSION=GAMEVERSION, public_url=PUBLIC_URL, SERVERIP=BIND_HOST, SERVERPORT=BIND_PORT)
 
 @app.route("/health")
 def health():

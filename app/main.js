@@ -4,12 +4,22 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 const http = require('http');
 
-// Locate flash plugin (works in dev and in packaged release)
-let flashPluginPath = path.join(__dirname, '..', 'plugins', 'pepflashplayer64.dll');
-if (!fs.existsSync(flashPluginPath)) {
-  const packagedPlugin = path.join(process.resourcesPath, '..', 'plugins', 'pepflashplayer64.dll');
-  if (fs.existsSync(packagedPlugin)) flashPluginPath = packagedPlugin;
+function getAppRoot() {
+  const isPackaged = app.isPackaged;
+  if (isPackaged) {
+    return path.dirname(app.getPath('exe'));
+  }
+  return path.join(__dirname, '..');
 }
+
+// Locate flash plugin (works in dev and in packaged release)
+const appRoot = getAppRoot();
+let flashPluginPath = path.join(appRoot, 'plugins', 'pepflashplayer64.dll');
+if (!fs.existsSync(flashPluginPath)) {
+  flashPluginPath = path.join(__dirname, '..', 'plugins', 'pepflashplayer64.dll');
+}
+
+console.log('[Launcher] Flash plugin path:', flashPluginPath, 'Found:', fs.existsSync(flashPluginPath));
 
 app.commandLine.appendSwitch('ppapi-flash-path', flashPluginPath);
 app.commandLine.appendSwitch('ppapi-flash-version', '34.0.0.376');
@@ -90,19 +100,26 @@ function waitForServer(callback, attempts = 40) {
 }
 
 function createMainWindow() {
+  const root = getAppRoot();
+  let appIcon = path.join(root, 'icon.ico');
+  if (!fs.existsSync(appIcon)) {
+    appIcon = path.join(root, 'templates', 'img', 'icon.png');
+  }
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 820,
     minWidth: 1024,
     minHeight: 720,
     title: 'Social Wars: Reborn',
-    icon: path.join(__dirname, '..', 'templates', 'img', 'icon.png'),
+    icon: appIcon,
     backgroundColor: '#1a1f16',
     autoHideMenuBar: false,
     webPreferences: {
       plugins: true,
-      nodeIntegration: false,
-      contextIsolation: true
+      nodeIntegration: true,
+      contextIsolation: false,
+      enableRemoteModule: true
     }
   });
 
