@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Menu, globalShortcut } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const zlib = require('zlib');
 const { spawn } = require('child_process');
 const http = require('http');
 
@@ -21,24 +22,84 @@ if (!fs.existsSync(flashPluginPath)) {
 
 console.log('[Launcher] Flash plugin path:', flashPluginPath, 'Found:', fs.existsSync(flashPluginPath));
 
+// Flash plugin registration
 app.commandLine.appendSwitch('ppapi-flash-path', flashPluginPath);
 app.commandLine.appendSwitch('ppapi-flash-version', '34.0.0.376');
 app.commandLine.appendSwitch('no-sandbox');
+
+// Extreme Performance, Low Latency & High FPS Switches
+app.commandLine.appendSwitch('ignore-gpu-blocklist');
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('enable-zero-copy');
+app.commandLine.appendSwitch('enable-native-gpu-memory-buffers');
+app.commandLine.appendSwitch('disable-frame-rate-limit');
+app.commandLine.appendSwitch('disable-gpu-vsync');
+app.commandLine.appendSwitch('max-gum-fps', '120');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('disable-background-timer-throttling');
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+app.commandLine.appendSwitch('enable-accelerated-2d-canvas');
+app.commandLine.appendSwitch('enable-accelerated-video-decode');
+app.commandLine.appendSwitch('high-dpi-support', '1');
+
+// Dynamic Flash SWF framerate patcher
+function patchSwfFps(filePath, targetFps) {
+  try {
+    if (!fs.existsSync(filePath)) return false;
+    const buf = fs.readFileSync(filePath);
+    const sig = buf.toString('latin1', 0, 3);
+    if (sig !== 'CWS') return false;
+    const version = buf[3];
+    const origLen = buf.slice(4, 8);
+    const decomp = zlib.inflateSync(buf.slice(8));
+    
+    const nbits = decomp[0] >> 3;
+    const totalBytes = Math.floor((5 + 4 * nbits + 7) / 8);
+    
+    const fpsInt = Math.floor(targetFps);
+    const fpsFrac = Math.floor((targetFps - fpsInt) * 256);
+    decomp[totalBytes] = fpsFrac;
+    decomp[totalBytes + 1] = fpsInt;
+    
+    const re = Buffer.from('\tframeRate\x02');
+    const idx = decomp.indexOf(re);
+    if (idx !== -1) {
+      const fpsStr = String(fpsInt).padStart(2, '0');
+      decomp[idx + re.length] = fpsStr.charCodeAt(0);
+      decomp[idx + re.length + 1] = fpsStr.charCodeAt(1);
+    }
+    
+    const recompressed = zlib.deflateSync(decomp);
+    const outBuf = Buffer.concat([
+      Buffer.from('CWS'),
+      Buffer.from([version]),
+      origLen,
+      recompressed
+    ]);
+    fs.writeFileSync(filePath, outBuf);
+    console.log(`[Launcher] Patched ${path.basename(filePath)} to ${targetFps} FPS`);
+    return true;
+  } catch (err) {
+    console.error(`[Launcher] Error patching FPS for ${filePath}:`, err);
+    return false;
+  }
+}
+
+function setGameFramerate(targetFps) {
+  const root = getAppRoot();
+  const files = [
+    path.join(root, 'assets', 'flash', 'SWLoader.swf'),
+    path.join(root, 'assets', 'flash', 'Basesec_1.5.4.swf')
+  ];
+  for (const f of files) {
+    patchSwfFps(f, targetFps);
+  }
+}
 
 let mainWindow = null;
 let pythonProcess = null;
 const SERVER_PORT = 5055;
 const SERVER_URL = `http://127.0.0.1:${SERVER_PORT}/`;
-
-function getAppRoot() {
-  // If packaged with electron, app directory or root is outside resources
-  const isPackaged = app.isPackaged;
-  if (isPackaged) {
-    return path.dirname(app.getPath('exe'));
-  }
-  return path.join(__dirname, '..');
-}
 
 function startPythonServer() {
   const rootDir = getAppRoot();
@@ -123,8 +184,8 @@ function createMainWindow() {
     }
   });
 
-  // Custom Gaming Menu with User Account, Community, Game, and Developer options
-  const { shell } = require('electron');
+  // Custom Gaming Menu with User Account, Performance, Community, Game, and Developer options
+  const { shell, dialog } = require('electron');
   const menuTemplate = [
     {
       label: '⚔️ Game',
@@ -159,6 +220,32 @@ function createMainWindow() {
           label: 'Create New Empire',
           accelerator: 'Ctrl+N',
           click: () => mainWindow.loadURL(SERVER_URL + 'new.html')
+        }
+      ]
+    },
+    {
+      label: '⚡ Performance',
+      submenu: [
+        {
+          label: '🚀 60 FPS (Ultra Smooth - Recommended)',
+          click: () => {
+            setGameFramerate(60);
+            mainWindow.reload();
+          }
+        },
+        {
+          label: '⚡ 120 FPS (Extreme Framerate)',
+          click: () => {
+            setGameFramerate(120);
+            mainWindow.reload();
+          }
+        },
+        {
+          label: '⏳ 30 FPS (Classic Retro)',
+          click: () => {
+            setGameFramerate(30);
+            mainWindow.reload();
+          }
         }
       ]
     },
