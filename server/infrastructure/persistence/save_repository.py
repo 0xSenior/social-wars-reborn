@@ -166,28 +166,35 @@ class SaveRepository:
 
     def get_all_saves_info(self) -> List[Dict[str, Any]]:
         result = []
-        for pid, s in self._saves.items():
-            info = s.get("playerInfo", {})
-            result.append({
-                "pid": pid,
-                "name": info.get("name", "Warrior"),
-                "level": info.get("level", 1),
-                "cash": info.get("cash", 0),
-                "last_logged_in": info.get("last_logged_in", 0)
-            })
+        for pid in self._saves:
+            result.append(self.get_save_info(pid))
         result.sort(key=lambda x: x.get("last_logged_in", 0), reverse=True)
         return result
 
     def get_save_info(self, userid: str) -> Dict[str, Any]:
         save = self._saves.get(str(userid))
         if not save:
-            return {"userid": str(userid), "name": "Warrior", "level": 1, "cash": 0}
+            return {
+                "userid": str(userid),
+                "pid": str(userid),
+                "name": "Warrior",
+                "level": 1,
+                "cash": 0,
+                "xp": 0,
+                "last_logged_in": 0
+            }
         info = save.get("playerInfo", {})
+        default_map = info.get("default_map", 0)
+        maps = save.get("maps", [])
+        m = maps[default_map] if default_map < len(maps) else (maps[0] if maps else {})
         return {
             "userid": str(userid),
-            "name": info.get("name", "Warrior"),
-            "level": info.get("level", 1),
-            "cash": info.get("cash", 0)
+            "pid": str(userid),
+            "name": str(info.get("name", "Warrior")),
+            "level": m.get("level", info.get("level", 1)),
+            "xp": m.get("xp", 0),
+            "cash": info.get("cash", 0),
+            "last_logged_in": info.get("last_logged_in", 0)
         }
 
     def get_neighbors(self, userid: str) -> List[Dict[str, Any]]:
