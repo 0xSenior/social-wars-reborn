@@ -1,10 +1,16 @@
 const { app, BrowserWindow, Menu, globalShortcut } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { spawn } = require('child_process');
 const http = require('http');
 
-// Configure PPAPI Flash Player plugin
-const flashPluginPath = path.join(__dirname, '..', 'plugins', 'pepflashplayer64.dll');
+// Locate flash plugin (works in dev and in packaged release)
+let flashPluginPath = path.join(__dirname, '..', 'plugins', 'pepflashplayer64.dll');
+if (!fs.existsSync(flashPluginPath)) {
+  const packagedPlugin = path.join(process.resourcesPath, '..', 'plugins', 'pepflashplayer64.dll');
+  if (fs.existsSync(packagedPlugin)) flashPluginPath = packagedPlugin;
+}
+
 app.commandLine.appendSwitch('ppapi-flash-path', flashPluginPath);
 app.commandLine.appendSwitch('ppapi-flash-version', '34.0.0.376');
 app.commandLine.appendSwitch('no-sandbox');
@@ -15,15 +21,42 @@ let pythonProcess = null;
 const SERVER_PORT = 5055;
 const SERVER_URL = `http://127.0.0.1:${SERVER_PORT}/`;
 
+function getAppRoot() {
+  // If packaged with electron, app directory or root is outside resources
+  const isPackaged = app.isPackaged;
+  if (isPackaged) {
+    return path.dirname(app.getPath('exe'));
+  }
+  return path.join(__dirname, '..');
+}
+
 function startPythonServer() {
-  console.log('[Launcher] Starting Python backend server...');
-  const repoRoot = path.join(__dirname, '..');
-  
-  pythonProcess = spawn('python', ['server.py', '--port', String(SERVER_PORT)], {
-    cwd: repoRoot,
-    windowsHide: true,
-    stdio: ['ignore', 'pipe', 'pipe']
-  });
+  const rootDir = getAppRoot();
+  const binServerExe = path.join(rootDir, 'bin', 'server.exe');
+  const rootServerExe = path.join(rootDir, 'server.exe');
+
+  let serverExe = null;
+  if (fs.existsSync(binServerExe)) {
+    serverExe = binServerExe;
+  } else if (fs.existsSync(rootServerExe)) {
+    serverExe = rootServerExe;
+  }
+
+  if (serverExe) {
+    console.log('[Launcher] Starting compiled backend engine from', serverExe);
+    pythonProcess = spawn(serverExe, ['--port', String(SERVER_PORT)], {
+      cwd: rootDir,
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+  } else {
+    console.log('[Launcher] Starting python server.py from', rootDir);
+    pythonProcess = spawn('python', ['server.py', '--port', String(SERVER_PORT)], {
+      cwd: rootDir,
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+  }
 
   pythonProcess.stdout.on('data', (data) => {
     console.log(`[Server] ${data.toString().trim()}`);
