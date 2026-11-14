@@ -66,5 +66,28 @@
                 &forceQuestReload=0&brk=0'>
             </embed>
         </div>
+        <script>
+            // Smooth Mouse Wheel Zoom
+            window.addEventListener('wheel', function(e) {
+                var swf = document.getElementById('swf');
+                if (swf && typeof swf.zoomMap === 'function') {
+                    var delta = e.deltaY < 0 ? 1 : -1;
+                    swf.zoomMap(delta);
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            // Keyboard Zoom (+ / -)
+            window.addEventListener('keydown', function(e) {
+                var swf = document.getElementById('swf');
+                if (swf && typeof swf.zoomMap === 'function') {
+                    if (e.key === '+' || e.key === '=' || e.keyCode === 187 || e.keyCode === 107) {
+                        swf.zoomMap(1);
+                    } else if (e.key === '-' || e.key === '_' || e.keyCode === 189 || e.keyCode === 109) {
+                        swf.zoomMap(-1);
+                    }
+                }
+            });
+        </script>
     </body>
 </html>

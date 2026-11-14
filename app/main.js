@@ -224,6 +224,17 @@ function createMainWindow() {
         },
         { type: 'separator' },
         {
+          label: '🔍 Zoom In',
+          accelerator: 'Equal',
+          click: () => mainWindow.webContents.executeJavaScript("var s = document.getElementById('swf'); if (s && typeof s.zoomMap === 'function') s.zoomMap(1);")
+        },
+        {
+          label: '🔍 Zoom Out',
+          accelerator: 'Minus',
+          click: () => mainWindow.webContents.executeJavaScript("var s = document.getElementById('swf'); if (s && typeof s.zoomMap === 'function') s.zoomMap(-1);")
+        },
+        { type: 'separator' },
+        {
           label: 'Exit Game',
           accelerator: 'Alt+F4',
           click: () => app.quit()
