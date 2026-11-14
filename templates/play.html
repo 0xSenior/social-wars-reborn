@@ -37,7 +37,7 @@
     <body>
         <div id="game-container">
             <embed id="swf"
-                src="{{public_url or 'http://127.0.0.1:5055'}}/static/socialwars/flash/SWLoader.swf?swftoload=/static/socialwars/flash/{{GAMEVERSION}}"
+                src="{{public_url or 'http://127.0.0.1:5055'}}/static/socialwars/flash/SWLoader.swf?t={{serverTime}}&swftoload=/static/socialwars/flash/{{GAMEVERSION}}?t={{serverTime}}"
                 allowFullScreen="true"
                 bgcolor="#1a1f16"
                 quality="high"

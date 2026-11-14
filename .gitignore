@@ -35,3 +35,12 @@ bundle/
 base_library.zip
 dist/
 release/
+
+# Build & Tools temp
+build/
+*.spec
+tools/ffdec/
+tools/base_pcode/
+tools/basesec_src/
+tools/swloader_src/
+tools/patch_pcode.py

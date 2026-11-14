@@ -6,11 +6,18 @@ const { spawn } = require('child_process');
 const http = require('http');
 
 function getAppRoot() {
-  const isPackaged = app.isPackaged;
-  if (isPackaged) {
-    return path.dirname(app.getPath('exe'));
+  const exeDir = path.dirname(app.getPath('exe'));
+  if (fs.existsSync(path.join(exeDir, 'assets')) && (fs.existsSync(path.join(exeDir, 'templates')) || fs.existsSync(path.join(exeDir, 'bin')))) {
+    return exeDir;
   }
-  return path.join(__dirname, '..');
+  let cur = __dirname;
+  while (cur && cur !== path.dirname(cur)) {
+    if (fs.existsSync(path.join(cur, 'assets')) && (fs.existsSync(path.join(cur, 'templates')) || fs.existsSync(path.join(cur, 'bin')))) {
+      return cur;
+    }
+    cur = path.dirname(cur);
+  }
+  return path.join(__dirname, '..', '..', '..');
 }
 
 // Locate flash plugin (works in dev and in packaged release)
@@ -45,7 +52,10 @@ app.commandLine.appendSwitch('high-dpi-support', '1');
 // Dynamic Flash SWF framerate patcher
 function patchSwfFps(filePath, targetFps) {
   try {
-    if (!fs.existsSync(filePath)) return false;
+    if (!fs.existsSync(filePath)) {
+      console.warn(`[Launcher] File does not exist for patching: ${filePath}`);
+      return false;
+    }
     const buf = fs.readFileSync(filePath);
     const sig = buf.toString('latin1', 0, 3);
     if (sig !== 'CWS') return false;
@@ -61,12 +71,23 @@ function patchSwfFps(filePath, targetFps) {
     decomp[totalBytes] = fpsFrac;
     decomp[totalBytes + 1] = fpsInt;
     
+    // Update Flex/Flash metadata tag if present
     const re = Buffer.from('\tframeRate\x02');
     const idx = decomp.indexOf(re);
     if (idx !== -1) {
       const fpsStr = String(fpsInt).padStart(2, '0');
       decomp[idx + re.length] = fpsStr.charCodeAt(0);
       decomp[idx + re.length + 1] = fpsStr.charCodeAt(1);
+    }
+    
+    // Ensure built-in Stats widget is visible
+    const pattern = Buffer.from('d066ed1c246461d507d066ed1c', 'hex');
+    const pIdx = decomp.indexOf(pattern);
+    if (pIdx !== -1) {
+      const targetIdx = pIdx + pattern.length;
+      if (decomp[targetIdx] === 0x27) {
+        decomp[targetIdx] = 0x26; // pushtrue
+      }
     }
     
     const recompressed = zlib.deflateSync(decomp);
@@ -87,6 +108,7 @@ function patchSwfFps(filePath, targetFps) {
 
 function setGameFramerate(targetFps) {
   const root = getAppRoot();
+  console.log(`[Launcher] Setting FPS to ${targetFps} in root: ${root}`);
   const files = [
     path.join(root, 'assets', 'flash', 'SWLoader.swf'),
     path.join(root, 'assets', 'flash', 'Basesec_1.5.4.swf')
@@ -185,15 +207,15 @@ function createMainWindow() {
   });
 
   // Custom Gaming Menu with User Account, Performance, Community, Game, and Developer options
-  const { shell, dialog } = require('electron');
+  const { shell } = require('electron');
   const menuTemplate = [
     {
       label: '⚔️ Game',
       submenu: [
         {
-          label: 'Restart Game',
+          label: 'Restart Game (Bypass Cache)',
           accelerator: 'F5',
-          click: () => mainWindow.reload()
+          click: () => mainWindow.webContents.reloadIgnoringCache()
         },
         {
           label: 'Toggle Fullscreen',
@@ -230,21 +252,32 @@ function createMainWindow() {
           label: '🚀 60 FPS (Ultra Smooth - Recommended)',
           click: () => {
             setGameFramerate(60);
-            mainWindow.reload();
+            mainWindow.webContents.reloadIgnoringCache();
           }
         },
         {
           label: '⚡ 120 FPS (Extreme Framerate)',
           click: () => {
             setGameFramerate(120);
-            mainWindow.reload();
+            mainWindow.webContents.reloadIgnoringCache();
           }
         },
         {
           label: '⏳ 30 FPS (Classic Retro)',
           click: () => {
             setGameFramerate(30);
-            mainWindow.reload();
+            mainWindow.webContents.reloadIgnoringCache();
+          }
+        },
+        { type: 'separator' },
+        {
+          label: '📊 Toggle In-Game FPS Counter (Key: /)',
+          accelerator: '/',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.webContents.sendInputEvent({ type: 'keyDown', keyCode: '/' });
+              mainWindow.webContents.sendInputEvent({ type: 'keyUp', keyCode: '/' });
+            }
           }
         }
       ]
