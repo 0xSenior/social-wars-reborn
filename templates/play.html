@@ -40,8 +40,8 @@
                 src="{{public_url or 'http://127.0.0.1:5055'}}/static/socialwars/flash/SWLoader.swf?t={{serverTime}}&swftoload=/static/socialwars/flash/{{GAMEVERSION}}?t={{serverTime}}"
                 allowFullScreen="true"
                 bgcolor="#1a1f16"
-                quality="high"
-                wmode="direct"
+                quality="medium"
+                wmode="opaque"
                 width="100%"
                 height="100%"
                 name="se"
@@ -67,17 +67,23 @@
             </embed>
         </div>
         <script>
-            // Smooth Mouse Wheel Zoom
+            // Throttled Smooth Mouse Wheel Zoom (eliminates FPS freeze on rapid wheel scrolls)
+            var lastZoomTime = 0;
             window.addEventListener('wheel', function(e) {
+                e.preventDefault();
+                var now = Date.now();
+                if (now - lastZoomTime < 130) {
+                    return;
+                }
+                lastZoomTime = now;
                 var swf = document.getElementById('swf');
                 if (swf && typeof swf.zoomMap === 'function') {
                     var delta = e.deltaY < 0 ? 1 : -1;
                     swf.zoomMap(delta);
-                    e.preventDefault();
                 }
             }, { passive: false });
 
-            // Keyboard Zoom (+ / -)
+            // Keyboard Zoom Shortcuts (+ / -)
             window.addEventListener('keydown', function(e) {
                 var swf = document.getElementById('swf');
                 if (swf && typeof swf.zoomMap === 'function') {
@@ -88,6 +94,14 @@
                     }
                 }
             });
+
+            // Dynamic quality switch
+            window.setFlashQuality = function(q) {
+                var swf = document.getElementById('swf');
+                if (swf) {
+                    swf.setAttribute('quality', q);
+                }
+            };
         </script>
     </body>
 </html>

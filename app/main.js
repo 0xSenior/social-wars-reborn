@@ -282,6 +282,23 @@ function createMainWindow() {
         },
         { type: 'separator' },
         {
+          label: '✨ Graphics: Medium (Smooth 60 FPS - Recommended)',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.webContents.executeJavaScript("if (window.setFlashQuality) window.setFlashQuality('medium');");
+            }
+          }
+        },
+        {
+          label: '🎨 Graphics: High (Full Anti-Aliasing)',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.webContents.executeJavaScript("if (window.setFlashQuality) window.setFlashQuality('high');");
+            }
+          }
+        },
+        { type: 'separator' },
+        {
           label: '📊 Toggle In-Game FPS Counter (Key: /)',
           accelerator: '/',
           click: () => {
