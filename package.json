@@ -1,0 +1,23 @@
+{
+  "name": "social-wars-reborn",
+  "version": "1.0.0",
+  "description": "Social Wars: Reborn - Standalone Desktop Edition",
+  "main": "app/main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "keywords": [
+    "social-wars",
+    "game",
+    "desktop",
+    "preservation",
+    "electron"
+  ],
+  "author": "0xSenior",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "electron": "11.5.0"
+  }
+}

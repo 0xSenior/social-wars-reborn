@@ -1,5 +1,10 @@
-# Game Assets (heavy flash binary files, stored in Releases)
+# Node modules
+node_modules/
+package-lock.json
+
+# Game Assets & Binary Plugins
 assets/
+plugins/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -28,3 +33,5 @@ Desktop.ini
 *.dll
 bundle/
 base_library.zip
+dist/
+release/
