@@ -123,7 +123,8 @@ function createMainWindow() {
     }
   });
 
-  // Custom Gaming Menu
+  // Custom Gaming Menu with User Account, Community, Game, and Developer options
+  const { shell } = require('electron');
   const menuTemplate = [
     {
       label: '⚔️ Game',
@@ -133,11 +134,6 @@ function createMainWindow() {
           accelerator: 'F5',
           click: () => mainWindow.reload()
         },
-        {
-          label: 'Home / Profile Selection',
-          click: () => mainWindow.loadURL(SERVER_URL)
-        },
-        { type: 'separator' },
         {
           label: 'Toggle Fullscreen',
           accelerator: 'F11',
@@ -152,6 +148,38 @@ function createMainWindow() {
       ]
     },
     {
+      label: '👤 Account / Empire',
+      submenu: [
+        {
+          label: 'Log Out / Switch Empire',
+          accelerator: 'Ctrl+L',
+          click: () => mainWindow.loadURL(SERVER_URL)
+        },
+        {
+          label: 'Create New Empire',
+          accelerator: 'Ctrl+N',
+          click: () => mainWindow.loadURL(SERVER_URL + 'new.html')
+        }
+      ]
+    },
+    {
+      label: '🎁 Extras & Community',
+      submenu: [
+        {
+          label: 'Free Gifts',
+          click: () => mainWindow.webContents.executeJavaScript("alert('Free daily bonus received in your empire!');")
+        },
+        {
+          label: 'Join Discord Server',
+          click: () => shell.openExternal('https://discord.gg/zW5gSbQJBw')
+        },
+        {
+          label: 'Project GitHub',
+          click: () => shell.openExternal('https://github.com/0xSenior/social-wars-reborn')
+        }
+      ]
+    },
+    {
       label: '🛠️ Developer',
       submenu: [
         {
@@ -159,18 +187,23 @@ function createMainWindow() {
           accelerator: 'F12',
           click: () => mainWindow.webContents.toggleDevTools()
         },
+        { type: 'separator' },
         {
-          label: 'Open Save Folder',
+          label: 'Open Saves Folder',
           click: async () => {
-            const { shell } = require('electron');
-            shell.openPath(path.join(__dirname, '..', 'saves'));
+            shell.openPath(path.join(getAppRoot(), 'saves'));
           }
         },
         {
           label: 'Open Config Folder',
           click: async () => {
-            const { shell } = require('electron');
-            shell.openPath(path.join(__dirname, '..', 'config'));
+            shell.openPath(path.join(getAppRoot(), 'config'));
+          }
+        },
+        {
+          label: 'Edit Unit Stats (unit_patch.json)',
+          click: async () => {
+            shell.openPath(path.join(getAppRoot(), 'config', 'patch', 'unit_patch.json'));
           }
         }
       ]
@@ -179,6 +212,9 @@ function createMainWindow() {
 
   const menu = Menu.buildFromTemplate(menuTemplate);
   Menu.setApplicationMenu(menu);
+
+  // Start window maximized for full immersion
+  mainWindow.maximize();
 
   // Loading Screen HTML while waiting for server
   const loadingHtml = `

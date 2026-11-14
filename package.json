@@ -18,6 +18,7 @@
   "author": "0xSenior",
   "license": "GPL-3.0",
   "devDependencies": {
-    "electron": "11.5.0"
+    "electron": "11.5.0",
+    "rcedit": "^5.0.2"
   }
 }
